@@ -40,7 +40,7 @@ class NN(object):
     #usar kwargs?¿
     def __init__(self,topology:list[int],activation:str,rand:bool = True, low:float = None, top:float = None)->None:
         """topology should be an array of unsigned ints describing the number of neurons of input,hidden and output, in that order
-        activation refers to the activation function, available: sigmoid, ReLu, Tanh.
+        activation refers to the activation function, available: sigmoid.
         weights and biases are generated with random values between low and top, random behaviour on by default"""
         self.expected_input_length = topology[0]
         self.act_func = acts.sigmoid 
