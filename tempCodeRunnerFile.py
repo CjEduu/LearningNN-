@@ -1,9 +1,1 @@
-weights_T = weights.T()
-                # print(f"{l}-----")
-                # print(weights_T)
-                # print("---")
-                # print(delta)
-                # print("-----")
-                # print(mat.mat_dot(weights_T, delta))
-                # print("-------")
-                # print(self.act_func_der(self.layers[l-1].zs))
+epochs

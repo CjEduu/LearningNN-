@@ -4,6 +4,7 @@
 import activations as acts
 import cost_funcs as cfncs
 import matrix_math as mat
+import matplotlib.pyplot as plt
 from random import random
 
 def rand_float(low=None,top=None)->float:
@@ -105,7 +106,7 @@ class NN(object):
     #             print(error_delta)
             
     #         lidx-=1
-    def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix, cost_func=cfncs.sqr_err, act_func=acts.sigmoid) -> None:
+    def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix,plt_values:list, cost_func=cfncs.sqr_err, act_func=acts.sigmoid) -> None:
         self.cost_func = cost_func
         self.cost_func_der = cfncs.sqr_err_der  
         self.act_func = act_func
@@ -125,6 +126,8 @@ class NN(object):
 
                 # Backward pass
                 self.backpropagate(input_sample,expected_output, rate)
+            plt_values.append(total_cost/train_in.rows)
+                
 
             print(f"Epoch {epoch+1}/{epochs}, Average Cost: {total_cost / train_in.rows}")
 
@@ -195,7 +198,28 @@ class NN(object):
 
 def main()->None:
     topology = [2,2,1,1]
-    activation = "sigmoid"
+    activation = 'sigmoid'
+    epochs = 20000
+    
+    fig, ax = plt.subplots(layout = 'constrained')
+    
+    plt_values = []
+    
+    #Set labels
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Cost")
+    
+    
+    #Set scale
+    ax.set_ylim(0,None)
+    ax.set_xlim(0,epochs)
+    
+    
+    ax.set_aspect('auto')
+    
+    # Non-necessary
+    ax.set_xscale("linear")
+    ax.set_yscale('linear')
     
     nn = NN(topology,activation)
     train_input = mat.Matrix(4,2,[0.0,0.0,
@@ -208,7 +232,11 @@ def main()->None:
                                      0.0])
     
     nn.forward(mat.mat_row(train_input,3))
-    nn.train(20000,0.2,train_input,train_expected)
+    nn.train(epochs,0.15,train_input,train_expected,plt_values)
+    
+    ax.plot(range(epochs),plt_values,label = "epochs")
+    plt.show()
+    print(plt_values)
     
     for i in range(2):
         for j in range(2):
