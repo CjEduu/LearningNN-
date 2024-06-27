@@ -79,33 +79,7 @@ class NN(object):
             current_act = layer.acts
             
         return current_act
-    
-    # def train(self,epochs:int,rate:float,train_in:mat.Matrix,train_exp:mat.Matrix,cost_func = cfncs.sqr_err,act_func = acts.sigmoid)->None:
-    #     pass
-    
-    # def backprop(self,input:mat.Matrix,expected:mat.Matrix)->None:
-    #     output = self.forward(input)
-        
-    #     # first cost derivative 
-    #     error_delta = self.cost_func_der(output,expected)
-        
-    #     lidx = len(self.layers) - 1
-    #     for layer in reversed(self.layers):
-    #         bias_gradient = mat.mat_dot(error_delta,self.act_func_der(layer.zs.T())).data[0]
-    #         ws_gradient = mat.mat_scalar(self.layers[lidx-1].acts,bias_gradient)
-    #         error_delta = mat.Matrix(1,len(self.layers[lidx-1].neurons),[])
-            
-    #         print(lidx)
-    #         print(bias_gradient)
-    #         print(ws_gradient)
-            
-            
-    #         for neuron in layer.neurons:
-    #             print(mat.mat_scalar(neuron.ws,bias_gradient).T())
-    #             error_delta = mat.mat_sum(error_delta,mat.mat_scalar(neuron.ws,bias_gradient).T())
-    #             print(error_delta)
-            
-    #         lidx-=1
+
     def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix,plt_values:list, cost_func=cfncs.sqr_err, act_func=acts.sigmoid) -> None:
         self.cost_func = cost_func
         self.cost_func_der = cfncs.sqr_err_der  
@@ -199,9 +173,12 @@ class NN(object):
 def main()->None:
     topology = [2,2,1,1]
     activation = 'sigmoid'
-    epochs = 20000
+    epochs = 10000
+    learning_rate = 0.1
     
     fig, ax = plt.subplots(layout = 'constrained')
+    fig.canvas.manager.set_window_title('training a XOR model')
+    fig.suptitle("XOR")
     
     plt_values = []
     
@@ -221,6 +198,7 @@ def main()->None:
     ax.set_xscale("linear")
     ax.set_yscale('linear')
     
+    #NN
     nn = NN(topology,activation)
     train_input = mat.Matrix(4,2,[0.0,0.0,
                                   1.0,0.0,
@@ -229,14 +207,17 @@ def main()->None:
     train_expected = mat.Matrix(4,1,[0.0,
                                      1.0,
                                      1.0,
-                                     0.0])
+                                     1.0])
     
     nn.forward(mat.mat_row(train_input,3))
-    nn.train(epochs,0.15,train_input,train_expected,plt_values)
+    nn.train(epochs,learning_rate,train_input,train_expected,plt_values)
+    
+    
     
     ax.plot(range(epochs),plt_values,label = "epochs")
     plt.show()
-    print(plt_values)
+    
+
     
     for i in range(2):
         for j in range(2):
