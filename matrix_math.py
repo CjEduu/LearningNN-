@@ -2,6 +2,8 @@
 
 class Matrix(object):
     def __init__(self,rows,cols,data:list[float]):
+        if len(data) == 0:
+            data = [0 for _ in range(rows*cols)]
         assert(rows*cols == len(data))
         data = [float(x) for x in data]
         self.rows = rows
@@ -21,7 +23,14 @@ class Matrix(object):
         ret = ret[:-1];
         return ret
 
-
+    def T(self)->"Matrix":
+        transposed_data = []
+        for j in range(self.cols):
+            for i in range(self.rows):
+                transposed_data.append(self.mat_in(i, j))
+        return Matrix(self.cols, self.rows, transposed_data)
+    
+    
 def mat_sum(a:Matrix,b:Matrix)->Matrix:
     assert((a.cols == b.cols) and (a.rows == b.rows))
     return Matrix(a.rows,b.cols,[x+y for (x,y) in zip(a.data,b.data)])
@@ -37,6 +46,11 @@ def mat_dot(a:Matrix,b:Matrix)->Matrix:
             data.append(c)
     return Matrix(a.rows,b.cols,data)
 
+
+def mat_hadamard(a:Matrix,b:Matrix)->Matrix:
+    assert(a.rows == b.rows and a.cols == b.cols)
+    return Matrix(a.rows,a.cols,[x*y for (x,y) in zip(a.data,b.data)])
+
 def mat_scalar(a:Matrix,b:float)->Matrix:
     data = [num*b for num in a.data]
     return Matrix(a.rows,a.cols,data)
@@ -45,13 +59,14 @@ def mat_row(mat:Matrix,j:int)->Matrix:
     return Matrix(1,mat.cols,mat.data[mat.cols*j:mat.cols*j + mat.cols])
     
 def main():
-    mat = Matrix(2,2,[2,3,4,5])
-    mat2 = Matrix(2,1,[1 for _ in range(2)])
-    mat3 = mat_dot(mat,mat2)
+    mat = Matrix(4,4,[x for x in range(16)])
+    mat2 = Matrix(4,4,[2 for _ in range(16)])
+    print("---------------------")
     print(mat)
-    mat4 = mat_row(mat,0)
-    print(mat4)
-
+    print("---------------------")
+    print(mat2)
+    print("---------------------")
+    print(mat_hadamard(mat,mat2))
 if __name__ == "__main__":
     main()
                 

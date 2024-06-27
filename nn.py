@@ -6,9 +6,6 @@ import cost_funcs as cfncs
 import matrix_math as mat
 from random import random
 
-
-DEBUG = False
-
 def rand_float(low=None,top=None)->float:
     """If no args passed, generates between 0 and 1"""
     if low == None or top == None:
@@ -24,21 +21,23 @@ class Neuron(object):
         """
         self.ws = mat.Matrix(n_weights,1,[rand_float(low,top) for _ in range(n_weights)] if rand else [0 for _ in range(n_weights)])
         self.bias = rand_float(low,top)
-        self.z = None
-        self.a = None
         
     def think(self,input:mat.Matrix,act_func)->float:
         """think...xd"""
-        self.z = mat.mat_dot(input,self.ws).data[0] + self.bias
-        self.a = act_func(self.z) 
-        return self.a
+        z = mat.mat_dot(input,self.ws).data[0] + self.bias
+        return z
     
     def __repr__(self)->str:
         ret = f"   WS    BS = {self.bias}\n"
         ret += f"{self.ws}\n"
         return ret 
       
-    
+class Layer(object):
+    def __init__(self,neurons:list[Neuron],act_func)->None:
+        self.neurons:list[Neuron] = neurons
+        self.act_func = act_func
+        self.zs:mat.Matrix = None
+        self.acts:mat.Matrix = None
     
 class NN(object):
     def __init__(self,topology:list[int],rand:bool = True, low:float = None, top:float = None)->None:
@@ -47,79 +46,176 @@ class NN(object):
         weights and biases are generated with random values between low and top, random behaviour on by default"""
         
         self.expected_input_length = topology[0]
-        self.layers:list[list[Neuron]] = list()
+        self.layers:list[Layer] = list()
         self.act_func = acts.sigmoid
-        self.cost_func = cfncs.sqr_err # to do: have a module with more act_funcs, kinda like activations
+        self.cost_func = cfncs.sqr_err
         self.cost_func_der = cfncs.sqr_err_der
         self.act_func_der = acts.sigmoid_der
         
         # initializate the nn
         for i in range(1,len(topology)):
-            layer:list[Neuron] = list()
+            neurons:list[Neuron] = list()
             for _ in range(topology[i]):
-                layer.append(Neuron(topology[i-1],rand,low,top))
+                neurons.append(Neuron(topology[i-1],rand,low,top))
+            layer = Layer(neurons,self.act_func)
             self.layers.append(layer)
+            
     
-    def cost(self,input:mat.Matrix,expected:mat.Matrix)->float:
+    def cost(self,input:mat.Matrix,expected:mat.Matrix)->mat.Matrix:
         return self.cost_func(input,expected)
-
-    
-    def train(self,epochs:int,rate:float,train_in:mat.Matrix,train_exp:mat.Matrix,cost_func = cfncs.sqr_err,act_func = acts.sigmoid)->None:
-        pass
         
-    
     def forward(self,input:mat.Matrix)->mat.Matrix:
         assert(input.cols == self.expected_input_length)
         
         current_act = input
         for layer in self.layers:
-            next_activation_data:list[float] = list()
-            for neuron in layer:
-                a = neuron.think(current_act,self.act_func)
-                next_activation_data.append(a)
-                
-            current_act = mat.Matrix(1,len(layer),next_activation_data)
+            layer.zs = mat.Matrix(1,len(layer.neurons),[])
+            
+            for nidx,neuron in enumerate(layer.neurons):
+                layer.zs.data[nidx] = neuron.think(current_act,self.act_func)
+
+            layer.acts = acts.sigmoid(layer.zs)    
+            current_act = layer.acts
+            
         return current_act
     
-    def backprop(self,input:mat.Matrix,expected:mat.Matrix)->None:
-        output = self.forward(input)
+    # def train(self,epochs:int,rate:float,train_in:mat.Matrix,train_exp:mat.Matrix,cost_func = cfncs.sqr_err,act_func = acts.sigmoid)->None:
+    #     pass
+    
+    # def backprop(self,input:mat.Matrix,expected:mat.Matrix)->None:
+    #     output = self.forward(input)
         
-        # first cost derivative 
-        actual_a = self.cost_func_der(output,expected)
+    #     # first cost derivative 
+    #     error_delta = self.cost_func_der(output,expected)
         
-        for layer in reversed(self.layers):
-            for neuron in layer:
-                pass
-        
-        
-                
+    #     lidx = len(self.layers) - 1
+    #     for layer in reversed(self.layers):
+    #         bias_gradient = mat.mat_dot(error_delta,self.act_func_der(layer.zs.T())).data[0]
+    #         ws_gradient = mat.mat_scalar(self.layers[lidx-1].acts,bias_gradient)
+    #         error_delta = mat.Matrix(1,len(self.layers[lidx-1].neurons),[])
+            
+    #         print(lidx)
+    #         print(bias_gradient)
+    #         print(ws_gradient)
+            
+            
+    #         for neuron in layer.neurons:
+    #             print(mat.mat_scalar(neuron.ws,bias_gradient).T())
+    #             error_delta = mat.mat_sum(error_delta,mat.mat_scalar(neuron.ws,bias_gradient).T())
+    #             print(error_delta)
+            
+    #         lidx-=1
+    def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix, cost_func=cfncs.sqr_err, act_func=acts.sigmoid) -> None:
+        self.cost_func = cost_func
+        self.cost_func_der = cfncs.sqr_err_der  
+        self.act_func = act_func
+        self.act_func_der = acts.sigmoid_der  
+
+        for epoch in range(epochs):
+            total_cost = 0
+            for i in range(train_in.rows):
+                # Forward pass
+                input_sample = mat.mat_row(train_in,i)
+                output = self.forward(input_sample)
+
+                # Compute cost
+                expected_output = mat.Matrix(1, train_exp.cols, train_exp.data[i*train_exp.cols:(i+1)*train_exp.cols])
+                cost = self.cost(output, expected_output)
+                total_cost += sum(cost.data)
+
+                # Backward pass
+                self.backpropagate(input_sample,expected_output, rate)
+
+            print(f"Epoch {epoch+1}/{epochs}, Average Cost: {total_cost / train_in.rows}")
+
+    def backpropagate(self,input_training:mat.Matrix, expected_output: mat.Matrix, learning_rate: float) -> None:
+        # Compute the error in the output layer
+        output_layer = self.layers[-1]
+        delta = mat.mat_hadamard(
+            self.cost_func_der(output_layer.acts, expected_output),
+            self.act_func_der(output_layer.zs)
+        )
+
+        # Backpropagate the error
+        for l in range(len(self.layers) - 1, -1, -1):
+            layer = self.layers[l]
+
+            # Compute gradients
+            if l > 0:
+                prev_layer_acts = self.layers[l-1].acts
+            else:
+                prev_layer_acts = input_training
+
+            for n, neuron in enumerate(layer.neurons):
+                # Update weights
+                for w in range(neuron.ws.rows):
+                    neuron.ws.data[w] -= learning_rate * delta.data[n] * prev_layer_acts.data[w]
+
+                # Update bias
+                neuron.bias -= learning_rate * delta.data[n]
+
+            # Compute delta for the previous layer
+            if l > 0:
+                weights = mat.Matrix(len(layer.neurons), layer.neurons[0].ws.rows, [])
+                for n, neuron in enumerate(layer.neurons):
+                    weights.data[n*weights.cols:(n+1)*weights.cols] = neuron.ws.data
+
+                weights_T = weights.T()
+
+                # Compute delta for the previous layer
+                delta = mat.mat_hadamard(
+                    mat.mat_dot(weights_T, delta).T(),
+                    self.act_func_der(self.layers[l-1].zs)
+                )
+                         
     def __repr__(self)->str:
         ret = ""
         
         for i,layer in enumerate(self.layers):
             ret += "-"*20 + "\n" + f"Layer {i+1}:\n" + "-"*20 + "\n" + "\nWS\n" 
-            for i in range(len(layer[0].ws.data)//layer[0].ws.cols):
+            for i in range(len(layer.neurons[0].ws.data)//layer.neurons[0].ws.cols):
                 ret += '['
-                for neuron in layer:
+                for neuron in layer.neurons:
                     ret += f" {neuron.ws.data[i]:.2f} "
                 ret += ']\n'
 
             ret += "\nBS\n["
-            for neuron in layer:
+            for neuron in layer.neurons:
                 ret += f" {neuron.bias:.2f} "
-            ret += "]\n\n"
+            ret += "]\n"
             
-        return ret[:-1]
+            ret += "\nZS\n"
+            ret += f"{layer.zs}"
+            
+            ret += "\nACTS\n"
+            ret += f"{layer.acts}\n"
+        ret += "-"*20
+        return ret
     
 
 def main()->None:
-    topology = [2,2,1]
+    topology = [2,2,1,1]
     activation = "sigmoid"
     
     nn = NN(topology,activation)
-    train_input = mat.Matrix(4,2,[0.0,0.0,1.0,0.0,0.0,1.0,1.0,1.0]) 
-    train_expected = mat.Matrix(4,1,[0.0,1.0,1.0,1.0])
+    train_input = mat.Matrix(4,2,[0.0,0.0,
+                                  1.0,0.0,
+                                  0.0,1.0,
+                                  1.0,1.0]) 
+    train_expected = mat.Matrix(4,1,[0.0,
+                                     1.0,
+                                     1.0,
+                                     0.0])
+    
+    nn.forward(mat.mat_row(train_input,3))
+    nn.train(20000,0.2,train_input,train_expected)
+    
+    for i in range(2):
+        for j in range(2):
+            y = nn.forward(mat.Matrix(1,2,[i,j]))
+            print(f" {i} | {j} = {y} ")
+        
     print(nn)
-    print(nn.cost(nn.forward(mat.mat_row(train_input,3)),mat.mat_row(train_expected,2)))
+    
 if __name__ == "__main__":
     main()
