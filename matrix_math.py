@@ -1,4 +1,14 @@
 """Defining Matrix class and all the needed operation between matrices and scalars"""
+from random import random
+
+def rand_float(low=None,top=None)->float:
+    """If no args passed, generates between 0 and 1"""
+    if low == None or top == None:
+        rand = random()    
+    else:
+        rand = low + random() * (top - low)
+    return rand
+
 
 class Matrix(object):
     def __init__(self,rows,cols,data:list[float]):

@@ -1,29 +1,24 @@
 """ This repo is just for learning purposes, I do not intend to make anything new.
-    Just trying to make from scratch the things im learning to understand them deeper"""
+    Just trying to make from scratch the things im learning to understand them deeper
+    TO DO: Add more cost_funcs"""
+
 
 import activations as acts
 import cost_funcs as cfncs
 import matrix_math as mat
 import matplotlib.pyplot as plt
-from random import random
 
-def rand_float(low=None,top=None)->float:
-    """If no args passed, generates between 0 and 1"""
-    if low == None or top == None:
-        rand = random()    
-    else:
-        rand = low + random() * (top - low)
-    return rand
 
 class Neuron(object):
     def __init__(self,n_weights:int,rand:bool = True,low:float = None,top:float = None)->None:
         """ z = ws * outputs_previous_layer + bias
             a = act_func(z), ex: sigmoid(z)
         """
-        self.ws = mat.Matrix(n_weights,1,[rand_float(low,top) for _ in range(n_weights)] if rand else [0 for _ in range(n_weights)])
-        self.bias = rand_float(low,top)
+        self.ws = mat.Matrix(n_weights,1,[mat.rand_float(low,top) for _ in range(n_weights)] if rand else [0 for _ in range(n_weights)])
+        self.bias = mat.rand_float(low,top)
+        self.cost_func = None
         
-    def think(self,input:mat.Matrix,act_func)->float:
+    def think(self,input:mat.Matrix)->float:
         """think...xd"""
         z = mat.mat_dot(input,self.ws).data[0] + self.bias
         return z
@@ -43,15 +38,13 @@ class Layer(object):
 class NN(object):
     def __init__(self,topology:list[int],rand:bool = True, low:float = None, top:float = None)->None:
         """topology should be an array of unsigned ints describing the number of neurons of input,hidden and output, in that order
-        activation refers to the activation function, available: sigmoid.
-        weights and biases are generated with random values between low and top, random behaviour on by default"""
+        activation refers to the activation function, available: sigmoid,ReLu,TanH.
+        weights and biases are generated with random values between low and top, random behaviour on by default
+        """
         
         self.expected_input_length = topology[0]
         self.layers:list[Layer] = list()
-        self.act_func = acts.sigmoid
-        self.cost_func = cfncs.sqr_err
-        self.cost_func_der = cfncs.sqr_err_der
-        self.act_func_der = acts.sigmoid_der
+        self.act_func = None
         
         # initializate the nn
         for i in range(1,len(topology)):
@@ -73,19 +66,24 @@ class NN(object):
             layer.zs = mat.Matrix(1,len(layer.neurons),[])
             
             for nidx,neuron in enumerate(layer.neurons):
-                layer.zs.data[nidx] = neuron.think(current_act,self.act_func)
+                layer.zs.data[nidx] = neuron.think(current_act)
 
             layer.acts = acts.sigmoid(layer.zs)    
             current_act = layer.acts
             
         return current_act
 
-    def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix,plt_values:list, cost_func=cfncs.sqr_err, act_func=acts.sigmoid) -> None:
-        self.cost_func = cost_func
-        self.cost_func_der = cfncs.sqr_err_der  
-        self.act_func = act_func
-        self.act_func_der = acts.sigmoid_der  
-
+    def train(self, epochs: int, rate: float, train_in: mat.Matrix, train_exp: mat.Matrix,plt_values:list,cost_func='sqr_err',act_func='sigmoid') -> None:
+        
+        self.cost_func = getattr(cfncs,cost_func)
+        cost_func_der = cost_func + '_der'
+        self.cost_func_der = getattr(cfncs,cost_func_der) 
+        
+        self.act_func = getattr(acts,act_func)
+        act_func_der = act_func + '_der'
+        self.act_func_der = getattr(acts,act_func_der)  
+        
+        
         for epoch in range(epochs):
             total_cost = 0
             for i in range(train_in.rows):
@@ -100,9 +98,8 @@ class NN(object):
 
                 # Backward pass
                 self.backpropagate(input_sample,expected_output, rate)
-            plt_values.append(total_cost/train_in.rows)
                 
-
+            plt_values.append(total_cost/train_in.rows)
             print(f"Epoch {epoch+1}/{epochs}, Average Cost: {total_cost / train_in.rows}")
 
     def backpropagate(self,input_training:mat.Matrix, expected_output: mat.Matrix, learning_rate: float) -> None:
@@ -180,11 +177,14 @@ class NN(object):
     
 
 def main()->None:
-    topology = [2,2,1,1]
-    activation = 'sigmoid'
+    
+    #----DEFINE THE NN----------
+    topology = [2,2,1]
+    activation = 'tanh'
+    cost_func = 'sqr_err'
     epochs = 10000
     learning_rate = 0.1
-    
+    #----------------------------
     fig, ax = plt.subplots(layout = 'constrained')
     fig.canvas.manager.set_window_title('training a XOR model')
     fig.suptitle("XOR")
@@ -207,7 +207,8 @@ def main()->None:
     ax.set_xscale("linear")
     ax.set_yscale('linear')
     
-    #NN
+    #NN------------------------------
+    
     nn = NN(topology,activation)
     train_input = mat.Matrix(4,2,[0.0,0.0,
                                   1.0,0.0,
@@ -218,22 +219,14 @@ def main()->None:
                                      1.0,
                                      1.0])
     
-    nn.forward(mat.mat_row(train_input,3))
-    nn.train(epochs,learning_rate,train_input,train_expected,plt_values)
+    nn.train(epochs,learning_rate,train_input,train_expected,plt_values,cost_func=cost_func,act_func=activation)
+    print(nn)
     
-    
+    #------------------------------------
     
     ax.plot(range(epochs),plt_values,label = "epochs")
     plt.show()
-    
-
-    
-    for i in range(2):
-        for j in range(2):
-            y = nn.forward(mat.Matrix(1,2,[i,j]))
-            print(f" {i} | {j} = {y} ")
-        
-    print(nn)
+         
     
 if __name__ == "__main__":
     main()
