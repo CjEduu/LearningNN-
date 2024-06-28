@@ -37,6 +37,8 @@ def mat_sum(a:Matrix,b:Matrix)->Matrix:
 
 def mat_dot(a:Matrix,b:Matrix)->Matrix:
     assert(a.cols == b.rows)
+    x = a.rows
+    y = b.cols
     data:list[float] = list()
     for i in range(a.rows):
         for j in range(b.cols):
@@ -44,12 +46,14 @@ def mat_dot(a:Matrix,b:Matrix)->Matrix:
             for k in range(a.cols):
                 c += a.mat_in(i,k)*b.mat_in(k,j)
             data.append(c)
-    return Matrix(a.rows,b.cols,data)
+    return Matrix(x,y,data)
 
 
 def mat_hadamard(a:Matrix,b:Matrix)->Matrix:
     assert(a.rows == b.rows and a.cols == b.cols)
-    return Matrix(a.rows,a.cols,[x*y for (x,y) in zip(a.data,b.data)])
+    x = a.rows
+    y = a.cols
+    return Matrix(x,y,[x*y for (x,y) in zip(a.data,b.data)])
 
 def mat_scalar(a:Matrix,b:float)->Matrix:
     data = [num*b for num in a.data]
@@ -59,14 +63,15 @@ def mat_row(mat:Matrix,j:int)->Matrix:
     return Matrix(1,mat.cols,mat.data[mat.cols*j:mat.cols*j + mat.cols])
     
 def main():
-    mat = Matrix(4,4,[x for x in range(16)])
-    mat2 = Matrix(4,4,[2 for _ in range(16)])
-    print("---------------------")
+    mat = Matrix(2,2,[1,0,1,0])
+    mat2 = Matrix(2,2,[-1,2,4,-2])
+
+    print("----------------------")
     print(mat)
-    print("---------------------")
+    print("----------------------")
     print(mat2)
-    print("---------------------")
-    print(mat_hadamard(mat,mat2))
+    print("----------------------")
+    print(mat_dot(mat,mat2))
 if __name__ == "__main__":
     main()
                 

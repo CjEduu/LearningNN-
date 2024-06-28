@@ -112,7 +112,10 @@ class NN(object):
             self.cost_func_der(output_layer.acts, expected_output),
             self.act_func_der(output_layer.zs)
         )
-
+        # print(f"COST\n {self.cost_func_der(output_layer.acts, expected_output)}")
+        # print(f"ACT \n{self.act_func_der(output_layer.zs)}")
+        # print(f"DELTA OUT\n{delta}")
+        
         # Backpropagate the error
         for l in range(len(self.layers) - 1, -1, -1):
             layer = self.layers[l]
@@ -138,10 +141,16 @@ class NN(object):
                     weights.data[n*weights.cols:(n+1)*weights.cols] = neuron.ws.data
 
                 weights_T = weights.T()
+                delta_T = delta.T()
 
+                # print(f"DELTA\n{delta}")
+                # print(f"W\n{weights_T}")
+                # print(f"ZS\n{self.layers[l-1].zs}")
+                # print(f"DOT\n{mat.mat_dot(weights_T,delta_T)}")
                 # Compute delta for the previous layer
+                
                 delta = mat.mat_hadamard(
-                    mat.mat_dot(weights_T, delta).T(),
+                    mat.mat_dot(weights_T,delta_T).T(),
                     self.act_func_der(self.layers[l-1].zs)
                 )
                          
