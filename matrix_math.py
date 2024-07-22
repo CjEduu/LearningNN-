@@ -69,19 +69,31 @@ def mat_scalar(a:Matrix,b:float)->Matrix:
     data = [num*b for num in a.data]
     return Matrix(a.rows,a.cols,data)
 
+def mat_inner_dot(a:Matrix,b:Matrix)->float:
+    c = mat_hadamard(a,b)
+    return sum(c.data)
+
 def mat_row(mat:Matrix,j:int)->Matrix:
     return Matrix(1,mat.cols,mat.data[mat.cols*j:mat.cols*j + mat.cols])
+
+
+def mat_submatrix(mat:Matrix,i:int,j:int,_i:int,_j:int)->Matrix:
+    assert(i<= _i and j<= _j)
+    assert(0<= i < mat.rows and 0<= j < mat.rows)
+    assert(0<= _i < mat.rows and 0<= _j < mat.rows)
+    
+    output_data:list = []
+    for k in range(i,_i+1):
+        output_data.extend(mat.data[mat.cols*k + j : mat.cols*k + _j +1])
+
+    return Matrix(_i - i + 1 , _j - j +1, output_data)
     
 def main():
-    mat = Matrix(2,2,[1,0,1,0])
-    mat2 = Matrix(2,2,[-1,2,4,-2])
-
-    print("----------------------")
-    print(mat)
-    print("----------------------")
-    print(mat2)
-    print("----------------------")
-    print(mat_dot(mat,mat2))
+    matrix = Matrix(5,5,[rand_float() for _ in range(25)])
+    print(matrix)    
+    print("-----------------------")
+    print(mat_submatrix(matrix,0,0,3,3))
+    
 if __name__ == "__main__":
     main()
                 
