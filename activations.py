@@ -76,20 +76,56 @@ def ReLu_der(x:float|mat.Matrix)->float|mat.Matrix:
     else:
         print("Input should be float|matrix")
         return None
+    
 
+class Activation(object):
+    def __init__(self):
+        super().__init__()
+    
 
+class ReLU(Activation):
+    def __init__(self):
+        super().__init__()
+        self.act:mat.Matrix = None
+    
+    def forward(self,x:mat.Matrix)->mat.Matrix:
+        self.act = ReLu(x) 
+        return self.act
+    
+    def derivative(self,x:mat.Matrix)->mat.Matrix:
+        return ReLu_der(x)
+
+class Sigmoid(Activation):
+    def __init__(self):
+        super().__init__()
+        self.act:mat.Matrix = None
+    
+    def forward(self,x:mat.Matrix)->mat.Matrix:
+        self.act = sigmoid(x) 
+        return self.act
+    
+    def derivative(self,x:mat.Matrix)->mat.Matrix:
+        return sigmoid_der(x)
+    
+class TanH(Activation):
+    def __init__(self):
+        super().__init__()
+        self.act:mat.Matrix = None
+    
+    def forward(self,x:mat.Matrix)->mat.Matrix:
+        self.act = tanh(x) 
+        return self.act
+    
+    def derivative(self,x:mat.Matrix)->mat.Matrix:
+        return tanh_der(x)
 
 def main():
-    x = -1.0
-    z = 1.5
-    t = 1.9
-    y = mat.Matrix(1,3,[-1.0,1.5,1.9])
-    
-    print(ReLu_der(x))
-    print(ReLu_der(z))
-    print(ReLu_der(t))
-    print(ReLu_der(y))
-    
+    x = TanH()
+    y = Sigmoid()
+    z = ReLU()
+    print(isinstance(x,Activation))
+    print(isinstance(y,Activation))
+    print(isinstance(z,Activation))
     
 if __name__ == "__main__":
     main()
