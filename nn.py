@@ -146,69 +146,7 @@ class MLP(object):
                 continue
             ret += f"{layer}"
         return ret
-    
 
-def test()->None:
-    
-    #----DEFINE THE MLP----------
-    topology = [4,5,9]
-    activation = 'sigmoid'
-    cost_func = 'sqr_err'
-    epochs = 10000
-    learning_rate = 0.1
-    plt_values = []
-    
-    #MLP------------------------------
-    
-    nn = MLP(topology)
-    
-    numeros = [random.randint(0,1) for _ in range(128)]
-    paridad = []
-
-    contador = 0
-    for _ in range(16):
-        unos = 0
-        for _ in range(8):
-            if numeros[contador] == 1:
-                unos += 1 
-            contador += 1
-        paridad.append(int(unos%2==1))
-     
-    train_input = mat.Matrix(16,8,numeros) 
-    train_expected = mat.Matrix(16,1,paridad)
-    
-    nn.train(epochs,learning_rate,train_input,train_expected,plt_values,cost_func=cost_func,act_func=activation)
-    print(nn)
-    
-    print(nn.forward(mat.Matrix(1,8,[1,1,1,1,1,0,0,0])))
-    
-    #------------------------------------
-    
-    #----------------------------
-    fig, ax = plt.subplots(layout = 'constrained')
-    fig.canvas.manager.set_window_title('training a XOR model')
-    fig.suptitle("XOR")
-    
-    
-    #Set labels
-    ax.set_xlabel("Epochs")
-    ax.set_ylabel("Cost")
-    
-    
-    #Set scale
-    ax.set_ylim(0,None)
-    ax.set_xlim(0,epochs)
-    
-    
-    ax.set_aspect('auto')
-    
-    # Non-necessary
-    ax.set_xscale("linear")
-    ax.set_yscale('linear')
-    
-    ax.plot(range(epochs),plt_values,label = "epochs")
-    plt.show()
-         
          
 def main():
     epochs = 10000
